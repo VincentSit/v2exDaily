@@ -4,19 +4,21 @@
 import requests
 import re
 import sys
+import time
+
 from config import username, password
 
 reload(sys)
 sys.setdefaultencoding('utf-8')
 
-index_url = "http://www.v2ex.com"
-login_url = "http://www.v2ex.com/signin"
-daily_url = "http://www.v2ex.com/mission/daily"
+index_url = "https://www.v2ex.com"
+login_url = "https://www.v2ex.com/signin"
+daily_url = "https://www.v2ex.com/mission/daily"
 headers = {
-    "User-Agent": "UA",
-    "Host": "v2ex.com",
-    "Origin": "http://v2ex.com",
-    "Referer": "http://www.v2ex.com/signin"
+    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/53.0.2785.143 Safari/537.36",
+    "Host": "www.v2ex.com",
+    "Origin": "https://www.v2ex.com",
+    "Referer": "https://www.v2ex.com/signin"
 }
 
 s = requests.Session()
@@ -48,21 +50,29 @@ def trim(s):
     return s.strip()
 
 
-def get_once_value():
+def get_once_tokens():
     once_value = ''
+    once_user_token = ''
+    once_password_token = ''
+
     login_page = s.get(login_url, headers=headers, verify=False).text
 
     once_value = extract(login_page, '<input type="hidden" value="',
                          '" name="once" />')
-    return once_value
+    once_user_token = extract(login_page, '<input type="text" class="sl" name="',
+                         '" value="')
+    once_password_token = extract(login_page, '<input type="password" class="sl" name="',
+                         '" value="')
+
+    return (once_value, once_user_token, once_password_token)
 
 
 def get_post_data():
-    once_value = get_once_value()
+    (once_value, once_user_token, once_password_token) = get_once_tokens()
     post_data = {
         "next": "/",
-        "u": username,
-        "p": password,
+        once_user_token: username,
+        once_password_token: password,
         "once": once_value,
         "next": "/"
     }
@@ -116,9 +126,10 @@ def exe():
 
 
 def log(msg):
-    print msg
+    m = time.ctime() + ': ' + msg
+    print m
     with open("log.txt", "a") as f:
-        f.write(msg)
+        f.write(m)
         f.write('\n')
 
 if __name__ == "__main__":
